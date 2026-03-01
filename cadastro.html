@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Ammo 360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md border-t-4 border-blue-600">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold italic text-blue-700 mb-2">Ammo 360</h1>
+            <p class="text-gray-500 text-sm">Crie seu perfil na nossa rede.</p>
+        </div>
+        <form id="form-cadastro" class="space-y-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-1">Nome Completo</label>
+                <input type="text" id="cad-nome" required class="w-full border p-2 rounded focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-1">E-mail</label>
+                <input type="email" id="cad-email" required class="w-full border p-2 rounded focus:border-blue-500 outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Senha</label>
+                    <input type="password" id="cad-senha" required class="w-full border p-2 rounded focus:border-blue-500 outline-none" placeholder="Min. 6 carac.">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Nascimento</label>
+                    <input type="text" id="cad-nascimento" required maxlength="5" placeholder="DD/MM" class="w-full border p-2 rounded focus:border-blue-500 outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Cargo</label>
+                    <select id="cad-cargo" class="w-full border p-2 rounded outline-none">
+                        <option value="Consultor de Vendas">Consultor de Vendas</option>
+                        <option value="Gerente">Gerente</option>
+                        <option value="Backoffice">Backoffice</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Filial</label>
+                    <input type="text" id="cad-filial" required placeholder="Sua Loja" class="w-full border p-2 rounded focus:border-blue-500 outline-none">
+                </div>
+            </div>
+            <button type="submit" id="btn-cadastrar" class="w-full bg-blue-600 text-white font-bold py-3 rounded mt-4 hover:bg-blue-700 shadow-lg transition-all uppercase tracking-widest">Criar Minha Conta</button>
+        </form>
+        <div class="text-center mt-6 text-sm text-gray-500">
+            Já é da equipe? <a href="login.html" class="text-blue-600 font-bold hover:underline">Faça login</a>.
+        </div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzDI5VfD0EctyU4gLu4Ouvsro_brU18vIBLWUld7c7UkKpL-P8TevzQUUm5OjYYZhxgQ/exec';
+
+        // Máscara para Data de Nascimento
+        document.getElementById('cad-nascimento').addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,4);
+            e.target.value = v;
+        });
+
+        document.getElementById('form-cadastro').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-cadastrar');
+            
+            btn.innerHTML = 'CONECTANDO...';
+            btn.disabled = true;
+
+            const payload = {
+                action: 'novoCadastro',
+                Nome: document.getElementById('cad-nome').value,
+                Email: document.getElementById('cad-email').value,
+                Senha: document.getElementById('cad-senha').value,
+                Cargo: document.getElementById('cad-cargo').value,
+                Filial: document.getElementById('cad-filial').value, // Pega o que foi digitado
+                DataNascimento: document.getElementById('cad-nascimento').value
+            };
+
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+                
+                alert("Perfil criado com sucesso!");
+                localStorage.setItem('ammo_user', payload.Nome);
+                localStorage.setItem('ammo_cargo', payload.Cargo);
+                window.location.href = 'index.html';
+            } catch (erro) {
+                alert('Erro ao cadastrar. Tente novamente.');
+                btn.innerHTML = 'Criar Minha Conta';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

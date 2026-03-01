@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Ammo 360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-700 h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+        <h1 class="text-3xl font-black text-blue-700 text-center italic mb-8 uppercase tracking-tighter">Ammo 360</h1>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Seu e-mail" class="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+            <input type="password" id="senha" placeholder="Sua senha" class="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+            <button onclick="fazerLogin()" id="btn-entrar" class="w-full bg-blue-600 text-white font-black p-4 rounded-xl hover:bg-blue-800 transition-all uppercase tracking-widest shadow-lg">ENTRAR</button>
+        </div>
+        <p class="text-center mt-6 text-xs text-gray-500">Novo na equipe? <a href="cadastro.html" class="text-blue-600 font-bold underline">Criar Conta</a></p>
+    </div>
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxzDI5VfD0EctyU4gLu4Ouvsro_brU18vIBLWUld7c7UkKpL-P8TevzQUUm5OjYYZhxgQ/exec'; // <--- COLOQUE O LINK AQUI
+        async function fazerLogin() {
+            const e = document.getElementById('email').value; const s = document.getElementById('senha').value; const b = document.getElementById('btn-entrar');
+            if(!e || !s) return alert("Preencha tudo!");
+            b.innerText = "..."; b.disabled = true;
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'login', Email: e, Senha: s }) });
+                const d = await res.json();
+                if(d.status === "sucesso") {
+                    localStorage.setItem('ammo_user', d.Nome); localStorage.setItem('ammo_cargo', d.Cargo);
+                    window.location.href = 'index.html';
+                } else { alert("Erro de login!"); b.innerText = "ENTRAR"; b.disabled = false; }
+            } catch(e) { alert("Erro de conexão!"); b.innerText = "ENTRAR"; b.disabled = false; }
+        }
+    </script>
+</body>
+</html>

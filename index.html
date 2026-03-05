@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ammo 360 - Dashboard</title>
+    <title>Ammo Conect</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231d4ed8'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='900' font-style='italic' font-size='70' fill='white'>A</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -17,6 +17,7 @@
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
+    <audio id="som-notificacao" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
     
     <div id="story-modal" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="absolute top-0 left-0 w-full h-1 bg-gray-700 z-[70]"><div id="story-progress-bar" class="h-full bg-white w-0"></div></div>
@@ -125,41 +126,59 @@
 
         if (!nomeLogado) window.location.href = 'login.html';
 
-        async function carregarDados() {
-            if (!document.getElementById('story-modal').classList.contains('hidden')) return;
-            try {
-                const res = await fetch(APPS_SCRIPT_URL);
-                const d = await res.json();
-                globalUsers = d.usuarios;
-                const meu = d.usuarios[nomeLogado] || {};
-                
-                // Renderiza Perfil
-                document.getElementById('nome-card').innerText = nomeLogado;
-                document.getElementById('cargo-card').innerText = localStorage.getItem('ammo_cargo');
-                document.getElementById('bio-card').innerText = meu.bio || "Clique para editar sua bio...";
-                const foto = meu.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeLogado)}`;
-                document.getElementById('foto-usuario-nav').src = foto;
-                document.getElementById('foto-usuario-card').src = foto;
-                document.getElementById('foto-input').src = foto;
-                document.getElementById('perfil-capa').style.backgroundImage = `url('${meu.capa || ""}')`;
+        let ultimoIdPost = null; // Variável para controlar as novas postagens
 
-                // Renderiza Info
-                if(d.info) {
-                    document.getElementById('info-reunioes').innerText = d.info.reunioes || "Sem reuniões.";
-                    document.getElementById('info-agenda').innerText = d.info.agenda || "Sem agenda.";
-                    document.getElementById('link-treinamento').href = d.info.treinamento || "#";
-                    const setorEl = document.getElementById('info-setor');
-                    if (d.info.setor && d.info.setor.includes('http')) {
-                        setorEl.innerHTML = `<a href="${d.info.setor}" target="_blank" class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold text-[10px] block text-center">VER NOTÍCIAS</a>`;
-                    } else { setorEl.innerText = d.info.setor || "Sem novidades."; }
+async function carregarDados() {
+    if (!document.getElementById('story-modal').classList.contains('hidden')) return;
+
+    try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        const d = await res.json();
+        globalUsers = d.usuarios;
+        const meu = d.usuarios[nomeLogado] || {};
+
+        // --- LÓGICA DO SOM DE NOTIFICAÇÃO ---
+        if (d.posts && d.posts.length > 0) {
+            const idMaisRecente = d.posts[0].ID; // O primeiro post do array (mais novo)
+
+            // Se não for a primeira carga e o ID for diferente do último que vimos
+            if (ultimoIdPost !== null && idMaisRecente > ultimoIdPost) {
+                const som = document.getElementById('som-notificacao');
+                if (som) {
+                    som.play().catch(e => console.log("O navegador bloqueou o som. Clique na tela para ativar."));
                 }
-
-                renderizarStories(d.posts, d.usuarios);
-                renderizarFeed(d.posts, d.usuarios);
-                renderizarRanking(d.ranking);
-                renderizarNiver(d.usuarios);
-            } catch(e) { console.error(e); }
+            }
+            ultimoIdPost = idMaisRecente; // Atualiza o ID para a próxima verificação
         }
+
+        // --- Renderiza o Restante (Perfil, Info, Feed, etc) ---
+        document.getElementById('nome-card').innerText = nomeLogado;
+        document.getElementById('cargo-card').innerText = localStorage.getItem('ammo_cargo');
+        document.getElementById('bio-card').innerText = meu.bio || "Clique para editar sua bio...";
+        
+        const foto = meu.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeLogado)}`;
+        document.getElementById('foto-usuario-nav').src = foto;
+        document.getElementById('foto-usuario-card').src = foto;
+        document.getElementById('foto-input').src = foto;
+        document.getElementById('perfil-capa').style.backgroundImage = `url('${meu.capa || ""}')`;
+
+        if (d.info) {
+            document.getElementById('info-reunioes').innerText = d.info.reunioes || "Sem reuniões.";
+            document.getElementById('info-agenda').innerText = d.info.agenda || "Sem agenda.";
+            document.getElementById('link-treinamento').href = d.info.treinamento || "#";
+            const setorEl = document.getElementById('info-setor');
+            if (d.info.setor && d.info.setor.includes('http')) {
+                setorEl.innerHTML = `<a href="${d.info.setor}" target="_blank" class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold text-[10px] block text-center">NOTÍCIAS DO SETOR</a>`;
+            } else { setorEl.innerText = d.info.setor || "Sem novidades."; }
+        }
+
+        renderizarStories(d.posts, d.usuarios);
+        renderizarFeed(d.posts, d.usuarios);
+        renderizarRanking(d.ranking);
+        renderizarNiver(d.usuarios);
+
+    } catch (e) { console.error("Erro ao carregar dados:", e); }
+}
 
         // --- LÓGICA DE FOTOS DA GALERIA ---
         document.getElementById('input-arquivo').addEventListener('change', function(e) {
@@ -304,4 +323,5 @@
     </script>
 </body>
 </html>
+
 

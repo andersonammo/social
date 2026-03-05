@@ -11,6 +11,8 @@
         .aside-scroll::-webkit-scrollbar { width: 4px; }
         .aside-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         @media (min-width: 1024px) { .aside-fixed { height: calc(100vh - 100px); overflow-y: auto; } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -28,20 +30,23 @@
     </div>
 
     <nav class="bg-blue-700 text-white p-3 sticky top-0 z-50 shadow-md flex justify-between items-center">
-        <h1 class="text-2xl font-bold italic">Ammo 360</h1>
+        <h1 class="text-2xl font-bold italic tracking-tighter">Ammo 360</h1>
         <div class="flex items-center gap-3">
             <img id="foto-usuario-nav" class="w-8 h-8 rounded-full border border-white object-cover bg-white" src="">
             <button onclick="sair()" class="text-xs bg-blue-800 hover:bg-red-500 px-4 py-1.5 rounded-full transition-all">Sair</button>
         </div>
     </nav>
 
+    <input type="file" id="input-upload-perfil" accept="image/*" class="hidden">
+    <input type="file" id="input-upload-capa" accept="image/*" class="hidden">
+
     <div class="container mx-auto mt-6 flex flex-col lg:flex-row justify-center items-start gap-6 px-4 pb-10">
         
-        <aside class="w-full lg:w-1/4 space-y-4 lg:sticky lg:top-20 z-30 aside-fixed aside-scroll">
+        <aside class="w-full lg:w-1/4 space-y-4 lg:sticky lg:top-20 z-30 aside-fixed aside-scroll scrollbar-hide">
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <div id="perfil-capa" class="h-28 bg-blue-500 bg-cover bg-center cursor-pointer" onclick="mudarCapa()"></div>
                 <div class="px-4 pb-4 text-center">
-                    <img id="foto-usuario-card" class="w-28 h-28 rounded-full border-4 border-white object-cover mx-auto -mt-14 bg-white shadow-lg cursor-pointer" onclick="mudarFotoPerfil()">
+                    <img id="foto-usuario-card" class="w-28 h-28 rounded-full border-4 border-white object-cover mx-auto -mt-14 bg-white shadow-lg cursor-pointer transition-transform hover:scale-105" onclick="mudarFotoPerfil()">
                     <h2 id="nome-card" class="text-lg font-bold mt-2 text-gray-800 uppercase tracking-tight"></h2>
                     <p id="cargo-card" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest"></p>
                     <p id="bio-card" class="text-sm italic text-gray-600 mt-3 pt-3 border-t cursor-pointer hover:text-blue-500" onclick="mudarBio()"></p>
@@ -67,16 +72,25 @@
                     <textarea id="input-mensagem" rows="2" placeholder="O que você está pensando?" class="w-full bg-gray-50 rounded-lg px-4 py-2 text-sm focus:outline-none resize-none"></textarea>
                 </div>
                 <div class="flex justify-between items-center mt-3">
-                    <div class="flex gap-2">
-                        <select id="input-tipo" class="text-xs border rounded p-1 font-bold">
-                            <option value="Atualização">Atualização</option><option value="Meta">Meta</option><option value="Comunicado">📌 Comunicado</option>
+                    <div class="flex gap-4 items-center">
+                        <select id="input-tipo" class="text-xs border rounded p-1 font-bold outline-none">
+                            <option value="Atualização">Atualização</option>
+                            <option value="Meta">Meta</option>
+                            <option value="Comunicado">📌 Comunicado</option>
                         </select>
-                        <button onclick="document.getElementById('input-imagem').classList.toggle('hidden')" class="text-gray-400 hover:text-green-500"><i class="fa-regular fa-image text-lg"></i></button>
+                        <label for="input-arquivo" class="cursor-pointer text-gray-400 hover:text-blue-500 transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-camera text-xl"></i>
+                            <span id="status-foto" class="text-[9px] font-bold"></span>
+                        </label>
+                        <input type="file" id="input-arquivo" accept="image/*" class="hidden">
                     </div>
-                    <input type="text" id="input-imagem" placeholder="Link da imagem..." class="hidden text-xs border rounded p-1 w-32 focus:ring-1 focus:ring-blue-500 outline-none">
-                    <button id="btn-publicar" class="bg-blue-600 text-white font-bold py-1.5 px-5 rounded-lg text-xs hover:bg-blue-700 shadow-md">Publicar</button>
+                    <button id="btn-publicar" class="bg-blue-600 text-white font-bold py-1.5 px-5 rounded-lg text-xs hover:bg-blue-700 shadow-md transition-all">Publicar</button>
+                </div>
+                <div id="preview-container" class="mt-2 hidden">
+                    <img id="img-preview" src="" class="w-20 h-20 object-cover rounded-lg border-2 border-blue-500">
                 </div>
             </div>
+
             <div id="feed-container" class="space-y-4"></div>
         </main>
 
@@ -88,7 +102,7 @@
             </div>
             
             <div class="bg-white p-5 rounded-xl border shadow-sm">
-                <h3 class="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest"><i class="fa-solid fa-medal text-yellow-500"></i> Top Vendedores</h3>
+                <h3 class="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest flex items-center gap-2"><i class="fa-solid fa-medal text-yellow-500"></i> Top Vendedores</h3>
                 <ul id="lista-ranking" class="space-y-4 text-sm font-bold text-gray-700"></ul>
             </div>
 
@@ -102,216 +116,190 @@
     </div>
 
     <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzDI5VfD0EctyU4gLu4Ouvsro_brU18vIBLWUld7c7UkKpL-P8TevzQUUm5OjYYZhxgQ/exec';
-let nomeLogado = localStorage.getItem('ammo_user');
-let storiesVistos = JSON.parse(localStorage.getItem('ammo_stories_vistos')) || [];
-let globalStories = [];
-let globalUsers = {};
-let currentStoryIdx = -1;
-let storyTimer = null;
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzDI5VfD0EctyU4gLu4Ouvsro_brU18vIBLWUld7c7UkKpL-P8TevzQUUm5OjYYZhxgQ/exec';
+        let nomeLogado = localStorage.getItem('ammo_user');
+        let storiesVistos = JSON.parse(localStorage.getItem('ammo_stories_vistos')) || [];
+        let globalStories = []; let globalUsers = {}; let currentStoryIdx = -1; let storyTimer = null;
+        let imagemBase64 = ""; 
 
-if (!nomeLogado) window.location.href = 'login.html';
+        if (!nomeLogado) window.location.href = 'login.html';
 
-// 1. FUNÇÃO PRINCIPAL: CARREGA TODOS OS DADOS DA PLANILHA
-async function carregarDados() {
-    // Não atualiza se o modal de story estiver aberto (evita fechar o story na cara do usuário)
-    if (!document.getElementById('story-modal').classList.contains('hidden')) return;
+        async function carregarDados() {
+            if (!document.getElementById('story-modal').classList.contains('hidden')) return;
+            try {
+                const res = await fetch(APPS_SCRIPT_URL);
+                const d = await res.json();
+                globalUsers = d.usuarios;
+                const meu = d.usuarios[nomeLogado] || {};
+                
+                // Renderiza Perfil
+                document.getElementById('nome-card').innerText = nomeLogado;
+                document.getElementById('cargo-card').innerText = localStorage.getItem('ammo_cargo');
+                document.getElementById('bio-card').innerText = meu.bio || "Clique para editar sua bio...";
+                const foto = meu.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeLogado)}`;
+                document.getElementById('foto-usuario-nav').src = foto;
+                document.getElementById('foto-usuario-card').src = foto;
+                document.getElementById('foto-input').src = foto;
+                document.getElementById('perfil-capa').style.backgroundImage = `url('${meu.capa || ""}')`;
 
-    try {
-        const res = await fetch(APPS_SCRIPT_URL);
-        const d = await res.json();
-        globalUsers = d.usuarios;
-        const meu = d.usuarios[nomeLogado] || {};
+                // Renderiza Info
+                if(d.info) {
+                    document.getElementById('info-reunioes').innerText = d.info.reunioes || "Sem reuniões.";
+                    document.getElementById('info-agenda').innerText = d.info.agenda || "Sem agenda.";
+                    document.getElementById('link-treinamento').href = d.info.treinamento || "#";
+                    const setorEl = document.getElementById('info-setor');
+                    if (d.info.setor && d.info.setor.includes('http')) {
+                        setorEl.innerHTML = `<a href="${d.info.setor}" target="_blank" class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold text-[10px] block text-center">VER NOTÍCIAS</a>`;
+                    } else { setorEl.innerText = d.info.setor || "Sem novidades."; }
+                }
 
-        // --- Renderiza Perfil ---
-        document.getElementById('nome-card').innerText = nomeLogado;
-        document.getElementById('cargo-card').innerText = localStorage.getItem('ammo_cargo');
-        document.getElementById('bio-card').innerText = meu.bio || "Clique para editar sua bio...";
-        
-        const foto = meu.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeLogado)}`;
-        document.getElementById('foto-usuario-nav').src = foto;
-        document.getElementById('foto-usuario-card').src = foto;
-        document.getElementById('foto-input').src = foto;
-        document.getElementById('perfil-capa').style.backgroundImage = `url('${meu.capa || ""}')`;
+                renderizarStories(d.posts, d.usuarios);
+                renderizarFeed(d.posts, d.usuarios);
+                renderizarRanking(d.ranking);
+                renderizarNiver(d.usuarios);
+            } catch(e) { console.error(e); }
+        }
 
-        // --- Renderiza Cards de Info (Aba Info) ---
-        if (d.info) {
-            document.getElementById('info-reunioes').innerText = d.info.reunioes || "Sem reuniões agendadas.";
-            document.getElementById('info-agenda').innerText = d.info.agenda || "Sem dados de agenda.";
-            document.getElementById('link-treinamento').href = d.info.treinamento || "#";
+        // --- LÓGICA DE FOTOS DA GALERIA ---
+        document.getElementById('input-arquivo').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image(); img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const escala = 800 / img.width; canvas.width = 800; canvas.height = img.height * escala;
+                    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                    imagemBase64 = canvas.toDataURL("image/jpeg", 0.7);
+                    document.getElementById('preview-container').classList.remove('hidden');
+                    document.getElementById('img-preview').src = imagemBase64;
+                    document.getElementById('status-foto').innerText = "OK!";
+                }
+            };
+            reader.readAsDataURL(file);
+        });
 
-            const setorEl = document.getElementById('info-setor');
-            if (d.info.setor && d.info.setor.includes('http')) {
-                setorEl.innerHTML = `<a href="${d.info.setor}" target="_blank" class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold hover:bg-green-200 transition-all block text-center text-[10px]">NOTÍCIAS DO SETOR <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i></a>`;
-            } else {
-                setorEl.innerText = d.info.setor || "Sem atualizações hoje.";
+        window.mudarFotoPerfil = () => document.getElementById('input-upload-perfil').click();
+        window.mudarCapa = () => document.getElementById('input-upload-capa').click();
+
+        document.getElementById('input-upload-perfil').addEventListener('change', (e) => subirDireto(e.target.files[0], 'atualizarPerfil', 'Foto_Perfil'));
+        document.getElementById('input-upload-capa').addEventListener('change', (e) => subirDireto(e.target.files[0], 'atualizarCapa', 'Capa'));
+
+        async function subirDireto(arquivo, acao, campo) {
+            if (!arquivo) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400; canvas.height = 400;
+                    canvas.getContext("2d").drawImage(img, 0, 0, 400, 400);
+                    const base64 = canvas.toDataURL("image/jpeg", 0.6);
+                    const p = { action: acao, Nome: nomeLogado }; p[campo] = base64;
+                    await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: {'Content-Type':'text/plain'}, body: JSON.stringify(p) });
+                    carregarDados();
+                };
+            };
+            reader.readAsDataURL(arquivo);
+        }
+
+        // --- INTERAÇÕES BLINDADAS ---
+        window.darGosto = async (id, btn) => {
+            const countSpan = btn.querySelector('.count');
+            if(!countSpan || btn.disabled) return;
+            countSpan.innerText = parseInt(countSpan.innerText) + 1;
+            btn.disabled = true; btn.classList.add('text-blue-600');
+            await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: {'Content-Type':'text/plain'}, body: JSON.stringify({ action: 'gostar', id: String(id) }) });
+        };
+
+        window.enviarCom = async (id, el) => {
+            const texto = el.value.trim(); if(!texto || el.disabled) return;
+            el.disabled = true; el.placeholder = "...";
+            await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: {'Content-Type':'text/plain'}, body: JSON.stringify({ action: 'comentar', id: String(id), Autor: nomeLogado, Texto: texto }) });
+            el.value = ''; el.disabled = false; el.placeholder = "Enter para comentar"; carregarDados();
+        };
+
+        function renderizarFeed(posts, users) {
+            const container = document.getElementById('feed-container'); container.innerHTML = '';
+            posts.forEach(p => {
+                const cor = p.Tipo === 'Comunicado' ? 'border-l-4 border-l-red-600 bg-red-50' : 'border-l-4 border-l-blue-400';
+                const fA = users[p.Autor]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.Autor)}`;
+                let img = p.Imagem ? `<img src="${p.Imagem}" class="w-full rounded-xl mt-3 object-cover max-h-96 shadow-sm">` : '';
+                let coms = '';
+                if(p.Comentarios) p.Comentarios.forEach(c => {
+                    const fc = users[c.autor]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.autor)}`;
+                    coms += `<div class="flex gap-2 mt-3 animate-fade-in"><img src="${fc}" class="w-6 h-6 rounded-full object-cover border"><div class="bg-gray-100 p-2 rounded-2xl text-[11px] w-full"><p class="font-bold text-gray-800">${c.autor}</p><p class="text-gray-600">${c.texto}</p></div></div>`;
+                });
+                container.innerHTML += `<div class="bg-white p-5 rounded-xl border ${cor} shadow-sm mb-4"><div class="flex gap-3 mb-3"><img src="${fA}" class="w-10 h-10 rounded-full object-cover border shadow-sm"><div><p class="font-bold text-sm text-gray-800">${p.Autor}</p><p class="text-[10px] text-gray-400">${p.Data}</p></div></div><p class="text-sm text-gray-700">${p.Mensagem}</p>${img}<div class="flex gap-6 mt-4 pt-3 border-t border-gray-100 text-[10px] font-black text-gray-500"><button onclick="window.darGosto('${p.ID}', this)" class="flex items-center gap-2 hover:text-blue-600"><i class="fa-solid fa-thumbs-up"></i> CURTIR (<span class="count">${p.Curtidas || 0}</span>)</button><div class="flex items-center gap-2 uppercase"><i class="fa-solid fa-comments"></i> Comentários (${p.Comentarios ? p.Comentarios.length : 0})</div></div><div class="mt-4 pt-4 border-t border-gray-100"><div class="max-h-40 overflow-y-auto aside-scroll mb-3">${coms}</div><div class="flex gap-2 items-center"><img src="${document.getElementById('foto-usuario-nav').src}" class="w-7 h-7 rounded-full object-cover border"><input type="text" onkeydown="if(event.key==='Enter')window.enviarCom('${p.ID}', this)" placeholder="Escreva e aperte Enter..." class="w-full bg-gray-50 border rounded-full px-4 py-2 text-xs focus:ring-1 focus:ring-blue-400 outline-none"></div></div></div>`;
+            });
+        }
+
+        // --- STORIES, RANKING E NIVER ---
+        function renderizarStories(posts, users) {
+            const container = document.getElementById('stories-container'); container.innerHTML = '';
+            const recentes = posts.filter(p => p.Imagem && p.Imagem.trim() !== '' && (new Date().getTime() - p.ID) <= 86400000);
+            let nV = recentes.filter(p => !storiesVistos.includes(String(p.ID)));
+            let V = recentes.filter(p => storiesVistos.includes(String(p.ID)));
+            globalStories = [...nV, ...V];
+            const minhaFoto = users[nomeLogado]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeLogado)}`;
+            container.innerHTML += `<div class="relative w-24 h-40 rounded-xl flex-shrink-0 bg-white border shadow-sm overflow-hidden"><img src="${minhaFoto}" class="w-full h-28 object-cover opacity-80"><div class="absolute top-24 left-1/2 -translate-x-1/2 bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center border-4 border-white text-[10px] font-bold">+</div></div>`;
+            globalStories.forEach(p => {
+                const fA = users[p.Autor]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.Autor)}`;
+                const visto = storiesVistos.includes(String(p.ID));
+                container.innerHTML += `<div onclick="abrirStory('${p.ID}', '${p.Imagem}', '${p.Autor}', '${fA}')" class="relative w-24 h-40 rounded-xl flex-shrink-0 cursor-pointer border shadow-sm transition-all hover:scale-105 ${visto ? 'opacity-60' : 'opacity-100'}"><img src="${p.Imagem}" class="absolute inset-0 w-full h-full object-cover rounded-xl"><div class="absolute top-2 left-2 w-8 h-8 rounded-full p-0.5 ${visto ? 'bg-gray-300' : 'bg-blue-500'}"><img src="${fA}" class="w-full h-full rounded-full border-2 border-white object-cover bg-white"></div></div>`;
+            });
+        }
+
+        function abrirStory(id, img, autor, avatar) {
+            document.getElementById('modal-story-img').src = img; document.getElementById('modal-story-autor').innerText = autor; document.getElementById('modal-story-avatar').src = avatar;
+            document.getElementById('story-modal').classList.replace('hidden', 'flex'); document.body.style.overflow = 'hidden';
+            if(!storiesVistos.includes(String(id))){ storiesVistos.push(String(id)); localStorage.setItem('ammo_stories_vistos', JSON.stringify(storiesVistos)); }
+            currentStoryIdx = globalStories.findIndex(s => String(s.ID) === String(id)); iniciarBarra();
+        }
+
+        function iniciarBarra() {
+            clearInterval(storyTimer); const barra = document.getElementById('story-progress-bar');
+            barra.style.transition = 'none'; barra.style.width = '0%';
+            setTimeout(() => { barra.style.transition = 'width 5s linear'; barra.style.width = '100%'; }, 50);
+            storyTimer = setTimeout(() => { if(currentStoryIdx < globalStories.length - 1){ const p = globalStories[currentStoryIdx + 1]; abrirStory(p.ID, p.Imagem, p.Autor, globalUsers[p.Autor]?.foto || ""); } else fecharStory(); }, 5000);
+        }
+
+        function fecharStory() { clearInterval(storyTimer); document.getElementById('story-modal').classList.replace('flex', 'hidden'); document.body.style.overflow = 'auto'; carregarDados(); }
+
+        function renderizarRanking(rank) {
+            const list = document.getElementById('lista-ranking'); list.innerHTML = '';
+            rank.sort((a,b) => b.Porcentagem - a.Porcentagem).slice(0,3).forEach((p,i) => {
+                const med = ['🥇','🥈','🥉']; list.innerHTML += `<li class="flex justify-between"><span>${med[i]} ${p.Nome}</span><span class="text-blue-600 font-black">${p.Porcentagem}%</span></li>`;
+            });
+            const media = Math.round(rank.reduce((acc,p) => acc + Number(p.Porcentagem), 0) / (rank.length || 1));
+            if(document.getElementById('barra-equipa')) { document.getElementById('barra-equipa').style.width = media + '%'; document.getElementById('texto-equipa').innerText = media + '%'; }
+        }
+
+        function renderizarNiver(dic) {
+            const list = document.getElementById('lista-aniversariantes'); list.innerHTML = '';
+            const mesA = new Date().getMonth() + 1;
+            for(const n in dic) {
+                const dStr = String(dic[n].nascimento).trim(); let diaN, mesN;
+                if(dStr.includes('/')){ const p = dStr.split('/'); diaN = p[0]; mesN = parseInt(p[1]); }
+                else { const dO = new Date(dStr); if(!isNaN(dO)){ diaN = dO.getDate(); mesN = dO.getMonth()+1; } }
+                if(mesN === mesA) {
+                    const f = dic[n].foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n)}`;
+                    list.innerHTML += `<li class="flex items-center gap-4 p-2 rounded-xl hover:bg-pink-50 transition-all"><img src="${f}" class="w-14 h-14 rounded-full object-cover border-2 border-pink-200 shadow-sm"><div class="flex flex-col"><span class="text-base font-black text-gray-800 leading-tight">${n.split(' ')[0]}</span><span class="text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full font-bold w-fit mt-1 shadow-sm">Dia ${diaN}</span></div></li>`;
+                }
             }
         }
 
-        // --- Renderiza Componentes Dinâmicos ---
-        renderizarStories(d.posts, d.usuarios);
-        renderizarFeed(d.posts, d.usuarios);
-        renderizarRanking(d.ranking);
-        renderizarNiver(d.usuarios);
+        document.getElementById('btn-publicar').addEventListener('click', async () => {
+            const msg = document.getElementById('input-mensagem').value; if (!msg && !imagemBase64) return;
+            const btn = document.getElementById('btn-publicar'); btn.disabled = true; btn.innerText = "...";
+            await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: {'Content-Type':'text/plain'}, body: JSON.stringify({ action: 'novoPost', Autor: nomeLogado, Mensagem: msg, Tipo: document.getElementById('input-tipo').value, Imagem: imagemBase64 }) });
+            document.getElementById('input-mensagem').value = ''; imagemBase64 = ""; document.getElementById('preview-container').classList.add('hidden');
+            btn.disabled = false; btn.innerText = "Publicar"; carregarDados();
+        });
 
-    } catch (e) {
-        console.error("Erro crítico ao carregar dados:", e);
-    }
-}
-
-// 2. RENDERIZAÇÃO DO FEED (COMENTÁRIOS FIXOS)
-function renderizarFeed(posts, users) {
-    const container = document.getElementById('feed-container');
-    container.innerHTML = '';
-
-    posts.forEach(p => {
-        const cor = p.Tipo === 'Comunicado' ? 'border-l-4 border-l-red-600 bg-red-50' : (p.Tipo === 'Meta' ? 'border-l-4 border-l-yellow-400 bg-yellow-50' : 'border-l-4 border-l-blue-400');
-        const fA = users[p.Autor]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.Autor)}`;
-        let imgHtml = p.Imagem ? `<img src="${p.Imagem}" class="w-full rounded-xl mt-3 cursor-pointer object-cover max-h-96 shadow-sm" onclick="abrirStory('${p.ID}','${p.Imagem}','${p.Autor}','${fA}')">` : '';
-
-        let comentsHtml = '';
-        if (p.Comentarios && p.Comentarios.length > 0) {
-            p.Comentarios.forEach(c => {
-                const fotoC = users[c.autor]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.autor)}`;
-                comentsHtml += `
-                    <div class="flex gap-2 mt-3 animate-fade-in">
-                        <img src="${fotoC}" class="w-6 h-6 rounded-full object-cover border">
-                        <div class="bg-gray-100 p-2 rounded-2xl text-[11px] w-full">
-                            <p class="font-bold text-gray-800">${c.autor}</p>
-                            <p class="text-gray-600">${c.texto}</p>
-                        </div>
-                    </div>`;
-            });
-        } else {
-            comentsHtml = '<p class="text-[10px] text-gray-400 italic mt-2 ml-8">Nenhum comentário ainda.</p>';
-        }
-
-        container.innerHTML += `
-            <div class="bg-white p-5 rounded-xl border ${cor} shadow-sm mb-4">
-                <div class="flex gap-3 mb-3">
-                    <img src="${fA}" class="w-10 h-10 rounded-full object-cover border shadow-sm">
-                    <div><p class="font-bold text-sm text-gray-800 leading-none">${p.Autor}</p><p class="text-[10px] text-gray-400 mt-1">${p.Data} • <b>${p.Tipo.toUpperCase()}</b></p></div>
-                </div>
-                <p class="text-sm text-gray-700 leading-relaxed">${p.Mensagem}</p>
-                ${imgHtml}
-                <div class="flex gap-6 mt-4 pt-3 border-t border-gray-100 text-[10px] font-black text-gray-500">
-                    <button onclick="window.darGosto('${p.ID}', this)" class="flex items-center gap-2 hover:text-blue-600 transition-all uppercase">
-                        <i class="fa-solid fa-thumbs-up"></i> Curtir (<span class="count">${p.Curtidas || 0}</span>)
-                    </button>
-                    <div class="flex items-center gap-2 uppercase"><i class="fa-solid fa-comments"></i> Comentários (${p.Comentarios ? p.Comentarios.length : 0})</div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="max-h-60 overflow-y-auto aside-scroll mb-4 pr-1">${comentsHtml}</div>
-                    <div class="flex gap-2 items-center">
-                        <img src="${document.getElementById('foto-usuario-nav').src}" class="w-8 h-8 rounded-full object-cover border">
-                        <input type="text" onkeydown="if(event.key==='Enter')window.enviarCom('${p.ID}', this)" placeholder="Escreva e aperte Enter..." class="w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-xs focus:ring-1 focus:ring-blue-400 outline-none">
-                    </div>
-                </div>
-            </div>`;
-    });
-}
-
-// 3. AÇÕES DE INTERAÇÃO
-window.darGosto = async (id, btn) => {
-    const countSpan = btn.querySelector('.count');
-    if (!countSpan || btn.disabled) return;
-    let valorAtual = parseInt(countSpan.innerText) || 0;
-    countSpan.innerText = valorAtual + 1;
-    btn.disabled = true; btn.classList.add('text-blue-600');
-    try {
-        await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'gostar', id: String(id) }) });
-    } catch (e) { countSpan.innerText = valorAtual; btn.disabled = false; btn.classList.remove('text-blue-600'); }
-};
-
-window.enviarCom = async (id, el) => {
-    const texto = el.value.trim();
-    if (!texto || el.disabled) return;
-    el.disabled = true; el.placeholder = "Enviando...";
-    try {
-        await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'comentar', id: String(id), Autor: nomeLogado, Texto: texto }) });
-        el.value = ''; carregarDados();
-    } catch (e) { console.error(e); } finally { el.disabled = false; el.placeholder = "Escreva e aperte Enter..."; }
-};
-
-// 4. STORIES, RANKING E ANIVERSÁRIOS
-function renderizarStories(posts, users) {
-    const container = document.getElementById('stories-container'); container.innerHTML = '';
-    const recentes = posts.filter(p => p.Imagem && p.Imagem.trim() !== '' && (new Date().getTime() - p.ID) <= 86400000);
-    let nV = recentes.filter(p => !storiesVistos.includes(String(p.ID)));
-    let V = recentes.filter(p => storiesVistos.includes(String(p.ID)));
-    globalStories = [...nV, ...V];
-    container.innerHTML += `<div class="relative w-24 h-40 rounded-xl flex-shrink-0 bg-white border shadow-sm"><img src="${document.getElementById('foto-usuario-nav').src}" class="w-full h-28 object-cover opacity-80 rounded-t-xl"><div class="absolute top-24 left-1/2 -translate-x-1/2 bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center border-4 border-white text-[10px] font-bold">+</div></div>`;
-    globalStories.forEach(p => {
-        const fA = users[p.Autor]?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.Autor)}`;
-        const visto = storiesVistos.includes(String(p.ID));
-        container.innerHTML += `<div onclick="abrirStory('${p.ID}', '${p.Imagem}', '${p.Autor}', '${fA}')" class="relative w-24 h-40 rounded-xl flex-shrink-0 cursor-pointer border shadow-sm transition-opacity ${visto ? 'opacity-60' : 'opacity-100'}"><img src="${p.Imagem}" class="absolute inset-0 w-full h-full object-cover rounded-xl"><img src="${fA}" class="absolute top-2 left-2 w-7 h-7 rounded-full border-2 ${visto ? 'border-gray-300' : 'border-blue-500'} object-cover bg-white"></div>`;
-    });
-}
-
-function abrirStory(id, img, autor, avatar) {
-    document.getElementById('modal-story-img').src = img;
-    document.getElementById('modal-story-autor').innerText = autor;
-    document.getElementById('modal-story-avatar').src = avatar;
-    document.getElementById('story-modal').classList.replace('hidden', 'flex');
-    document.body.style.overflow = 'hidden';
-    if (!storiesVistos.includes(String(id))) { storiesVistos.push(String(id)); localStorage.setItem('ammo_stories_vistos', JSON.stringify(storiesVistos)); }
-    currentStoryIdx = globalStories.findIndex(s => String(s.ID) === String(id));
-    iniciarBarra();
-}
-
-function iniciarBarra() {
-    clearInterval(storyTimer); const barra = document.getElementById('story-progress-bar');
-    barra.style.transition = 'none'; barra.style.width = '0%';
-    setTimeout(() => { barra.style.transition = 'width 5s linear'; barra.style.width = '100%'; }, 50);
-    storyTimer = setTimeout(() => { if (currentStoryIdx < globalStories.length - 1) { const p = globalStories[currentStoryIdx + 1]; abrirStory(p.ID, p.Imagem, p.Autor, globalUsers[p.Autor]?.foto || ""); } else fecharStory(); }, 5000);
-}
-
-function fecharStory() { clearInterval(storyTimer); document.getElementById('story-modal').classList.replace('flex', 'hidden'); document.body.style.overflow = 'auto'; carregarDados(); }
-
-function renderizarRanking(rank) {
-    const list = document.getElementById('lista-ranking'); list.innerHTML = '';
-    rank.sort((a, b) => b.Porcentagem - a.Porcentagem).slice(0, 3).forEach((p, i) => {
-        const med = ['🥇', '🥈', '🥉'];
-        list.innerHTML += `<li class="flex justify-between"><span>${med[i]} ${p.Nome}</span><span class="text-blue-600 font-black">${p.Porcentagem}%</span></li>`;
-    });
-    const media = Math.round(rank.reduce((acc, p) => acc + Number(p.Porcentagem), 0) / (rank.length || 1));
-    if (document.getElementById('barra-equipa')) { document.getElementById('barra-equipa').style.width = media + '%'; document.getElementById('texto-equipa').innerText = media + '%'; }
-}
-
-function renderizarNiver(dic) {
-    const list = document.getElementById('lista-aniversariantes'); list.innerHTML = '';
-    const mesA = new Date().getMonth() + 1;
-    for (const n in dic) {
-        const dStr = String(dic[n].nascimento).trim();
-        let diaN, mesN;
-        if (dStr.includes('/')) { const p = dStr.split('/'); diaN = p[0]; mesN = parseInt(p[1]); }
-        else { const dO = new Date(dStr); if (!isNaN(dO)) { diaN = dO.getDate(); mesN = dO.getMonth() + 1; } }
-        if (mesN === mesA) {
-            const f = dic[n].foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n)}`;
-            list.innerHTML += `<li class="flex items-center gap-4 p-2 rounded-xl hover:bg-pink-50 transition-all"><img src="${f}" class="w-14 h-14 rounded-full object-cover border-2 border-pink-200 shadow-sm"><div class="flex flex-col"><span class="text-base font-black text-gray-800 leading-tight">${n.split(' ')[0]}</span><span class="text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full font-bold w-fit mt-1 shadow-sm">Dia ${diaN}</span></div></li>`;
-        }
-    }
-}
-
-// 5. ATUALIZAÇÕES DE PERFIL E INICIALIZAÇÃO
-async function mudarCapa() { const url = prompt("Link da Capa:"); if (url) await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'atualizarCapa', Nome: nomeLogado, Capa: url }) }); carregarDados(); }
-async function mudarFotoPerfil() { const url = prompt("Link da Foto:"); if (url) await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'atualizarPerfil', Nome: nomeLogado, Foto_Perfil: url }) }); carregarDados(); }
-async function mudarBio() { const bio = prompt("Sua Bio:"); if (bio) await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'atualizarBio', Nome: nomeLogado, Bio: bio }) }); carregarDados(); }
-
-document.getElementById('btn-publicar').addEventListener('click', async () => {
-    const msg = document.getElementById('input-mensagem').value; const img = document.getElementById('input-imagem').value;
-    if (!msg && !img) return;
-    const btn = document.getElementById('btn-publicar'); btn.disabled = true; btn.innerText = "...";
-    await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'novoPost', Autor: nomeLogado, Mensagem: msg, Tipo: document.getElementById('input-tipo').value, Imagem: img }) });
-    document.getElementById('input-mensagem').value = ''; document.getElementById('input-imagem').value = '';
-    btn.disabled = false; btn.innerText = "Publicar"; carregarDados();
-});
-
-function sair() { localStorage.clear(); window.location.href = 'login.html'; }
-
-// Inicia o sistema
-carregarDados();
-setInterval(carregarDados, 30000);
-</script>
+        async function mudarBio() { const bio = prompt("Sua Bio:"); if(bio) await fetch(APPS_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'atualizarBio', Nome:nomeLogado, Bio:bio})}); carregarDados(); }
+        function sair() { localStorage.clear(); window.location.href = 'login.html'; }
+        carregarDados(); setInterval(carregarDados, 30000);
+    </script>
 </body>
 </html>

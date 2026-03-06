@@ -194,30 +194,55 @@
             }
         };
 
-        document.getElementById('input-upload-perfil').addEventListener('change', (e) => subirFoto(e.target.files[0], 'atualizarPerfil', 'Foto_Perfil'));
-        document.getElementById('input-upload-capa').addEventListener('change', (e) => subirFoto(e.target.files[0], 'atualizarCapa', 'Capa'));
-        document.getElementById('input-upload-destaque').addEventListener('change', (e) => {
-            const nome = localStorage.getItem('temp_destaque_nome');
-            subirFoto(e.target.files[0], 'atualizarDestaque', 'Foto', nome);
-        });
+       // Listener atualizado para pegar o nome corretamente
+document.getElementById('input-upload-destaque').addEventListener('change', (e) => {
+    const nomeDestaque = localStorage.getItem('temp_destaque_nome');
+    if (!nomeDestaque) return alert("Nome não encontrado. Tente clicar no troféu novamente.");
+    subirFoto(e.target.files[0], 'atualizarDestaque', 'Foto', nomeDestaque);
+});
 
-        async function subirFoto(arquivo, acao, campo, nomeExtra = null) {
-            if (!arquivo) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image(); img.src = e.target.result;
-                img.onload = async function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 500; canvas.height = 500;
-                    canvas.getContext("2d").drawImage(img, 0, 0, 500, 500);
-                    const base64 = canvas.toDataURL("image/jpeg", 0.6);
-                    const p = { action: acao, Nome: nomeExtra || nomeLogado }; p[campo] = base64;
-                    await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: {'Content-Type':'text/plain'}, body: JSON.stringify(p) });
-                    carregarDados();
-                };
+async function subirFoto(arquivo, acao, campo, nomeExtra = null) {
+    if (!arquivo) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = async function() {
+            const canvas = document.createElement('canvas');
+            // Reduzido para 400px para garantir salvamento no Sheets
+            canvas.width = 400; 
+            canvas.height = 400;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, 400, 400);
+            
+            // Qualidade em 0.5 para gerar um código Base64 menor
+            const base64 = canvas.toDataURL("image/jpeg", 0.5);
+
+            const payload = { 
+                action: acao, 
+                Nome: nomeExtra || nomeLogado,
+                Foto: base64 
             };
-            reader.readAsDataURL(arquivo);
-        }
+            
+            // Se não for destaque, usamos o campo dinâmico (Perfil/Capa)
+            if(acao !== 'atualizarDestaque') payload[campo] = base64;
+
+            try {
+                await fetch(APPS_SCRIPT_URL, { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'text/plain'}, 
+                    body: JSON.stringify(payload) 
+                });
+                alert("Destaque atualizado com sucesso!");
+                carregarDados();
+            } catch (erro) {
+                console.error("Erro no upload:", erro);
+                alert("Erro ao salvar. Tente uma foto mais leve.");
+            }
+        };
+    };
+    reader.readAsDataURL(arquivo);
+}
 
         // --- FEED E STORIES ---
         function renderizarFeed(posts, users) {
@@ -323,4 +348,5 @@
     </script>
 </body>
 </html>
+
 

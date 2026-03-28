@@ -341,7 +341,57 @@ async function subirFoto(arquivo, acao, campo, nomeExtra = null) {
             document.getElementById('input-mensagem').value = ''; imagemBase64 = ""; document.getElementById('preview-container').classList.add('hidden');
             btn.disabled = false; btn.innerText = "Publicar"; carregarDados();
         });
+// --- COLOQUE ISSO DENTRO DA SUA TAG <SCRIPT> NO HTML ---
 
+// 1. LISTENERS PARA OS BOTÕES DE UPLOAD
+document.getElementById('input-upload-perfil').addEventListener('change', (e) => {
+    subirFoto(e.target.files[0], 'atualizarPerfil', 'Foto');
+});
+
+document.getElementById('input-upload-capa').addEventListener('change', (e) => {
+    subirFoto(e.target.files[0], 'atualizarCapa', 'Foto');
+});
+
+// 2. FUNÇÃO SUBIR FOTO OTIMIZADA (Mais leve para não travar o Sheets)
+async function subirFoto(arquivo, acao, campo, nomeExtra = null) {
+    if (!arquivo) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = async function() {
+            const canvas = document.createElement('canvas');
+            // Reduzido para 300px para garantir que o Base64 caiba na célula do Sheets
+            canvas.width = 300; 
+            canvas.height = 300;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, 300, 300);
+            
+            // Qualidade 0.5 para gerar um texto menor
+            const base64 = canvas.toDataURL("image/jpeg", 0.5);
+
+            const payload = { 
+                action: acao, 
+                Nome: nomeExtra || nomeLogado,
+                Foto: base64 // Sempre enviando como 'Foto' para o GS simplificado
+            };
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'text/plain'}, 
+                    body: JSON.stringify(payload) 
+                });
+                alert("Sucesso! Aguarde a atualização.");
+                carregarDados();
+            } catch (erro) {
+                console.error("Erro:", erro);
+                alert("Erro ao salvar. Tente uma foto menor.");
+            }
+        };
+    };
+    reader.readAsDataURL(arquivo);
+}
         async function mudarBio() { const bio = prompt("Sua Bio:"); if(bio) await fetch(APPS_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'atualizarBio', Nome:nomeLogado, Bio:bio})}); carregarDados(); }
         function sair() { localStorage.clear(); window.location.href = 'login.html'; }
         carregarDados(); setInterval(carregarDados, 30000);

@@ -345,6 +345,15 @@ async function subirFoto(arquivo, acao, campo, nomeExtra = null) {
         async function mudarBio() { const bio = prompt("Sua Bio:"); if(bio) await fetch(APPS_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'atualizarBio', Nome:nomeLogado, Bio:bio})}); carregarDados(); }
         function sair() { localStorage.clear(); window.location.href = 'login.html'; }
         carregarDados(); setInterval(carregarDados, 30000);
+        // Listener para Foto de Perfil
+document.getElementById('input-upload-perfil').addEventListener('change', (e) => {
+    subirFoto(e.target.files[0], 'atualizarFoto', 'Foto');
+});
+
+// Listener para Capa
+document.getElementById('input-upload-capa').addEventListener('change', (e) => {
+    subirFoto(e.target.files[0], 'atualizarCapa', 'Capa');
+});
     </script>
 </body>
 </html>

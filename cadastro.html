@@ -54,50 +54,59 @@
         </div>
     </div>
 
-    <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzDI5VfD0EctyU4gLu4Ouvsro_brU18vIBLWUld7c7UkKpL-P8TevzQUUm5OjYYZhxgQ/exec';
+        <script>
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzDI5VfD0EctyU4gLu4Ouvsro_brU18vIBLWUld7c7UkKpL-P8TevzQUUm5OjYYZhxgQ/exec'; // Certifique-se de que esta URL está correta
 
-        // Máscara para Data de Nascimento
-        document.getElementById('cad-nascimento').addEventListener('input', function(e) {
-            let v = e.target.value.replace(/\D/g, '');
-            if (v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,4);
-            e.target.value = v;
-        });
+    // Máscara para Data de Nascimento
+    document.getElementById('cad-nascimento').addEventListener('input', function(e) {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,4);
+        e.target.value = v;
+    });
 
-        document.getElementById('form-cadastro').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-cadastrar');
+    document.getElementById('form-cadastro').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-cadastrar');
+        
+        btn.innerHTML = 'CONECTANDO...';
+        btn.disabled = true;
+
+        const payload = {
+            action: 'cadastrar', // Alterado de 'novoCadastro' para 'cadastrar'
+            Nome: document.getElementById('cad-nome').value,
+            Email: document.getElementById('cad-email').value,
+            Senha: document.getElementById('cad-senha').value,
+            Cargo: document.getElementById('cad-cargo').value,
+            Nascimento: document.getElementById('cad-nascimento').value // Alterado de DataNascimento para Nascimento
+        };
+
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
             
-            btn.innerHTML = 'CONECTANDO...';
-            btn.disabled = true;
+            const result = await response.json();
 
-            const payload = {
-                action: 'novoCadastro',
-                Nome: document.getElementById('cad-nome').value,
-                Email: document.getElementById('cad-email').value,
-                Senha: document.getElementById('cad-senha').value,
-                Cargo: document.getElementById('cad-cargo').value,
-                Filial: document.getElementById('cad-filial').value, // Pega o que foi digitado
-                DataNascimento: document.getElementById('cad-nascimento').value
-            };
-
-            try {
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(payload)
-                });
-                
+            if (result.status === "sucesso") {
                 alert("Perfil criado com sucesso!");
                 localStorage.setItem('ammo_user', payload.Nome);
                 localStorage.setItem('ammo_cargo', payload.Cargo);
                 window.location.href = 'index.html';
-            } catch (erro) {
-                alert('Erro ao cadastrar. Tente novamente.');
+            } else {
+                alert("Erro: " + result.message);
                 btn.innerHTML = 'Criar Minha Conta';
                 btn.disabled = false;
             }
-        });
+        } catch (erro) {
+            console.error(erro);
+            alert('Erro ao conectar com o servidor. Tente novamente.');
+            btn.innerHTML = 'Criar Minha Conta';
+            btn.disabled = false;
+        }
+    });
+</script>
     </script>
 </body>
 
